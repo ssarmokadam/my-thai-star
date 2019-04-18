@@ -14,6 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import com.devonfw.module.security.jwt.config.KeyStoreAccess;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -22,14 +23,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
 
+
+	private KeyStoreAccess keyStoreAccess;
   /**
    * The constructor.
    *
    * @param url the login url
    * @param authManager the {@link AuthenticationManager}
+ * @param keyStoreAccess
    */
-  public JWTLoginFilter(String url, AuthenticationManager authManager) {
+  public JWTLoginFilter(String url, AuthenticationManager authManager, KeyStoreAccess keyStoreAccess) {
     super(new AntPathRequestMatcher(url));
+    this.keyStoreAccess=keyStoreAccess;
     setAuthenticationManager(authManager);
   }
 
@@ -46,6 +51,6 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
   protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
       Authentication auth) throws IOException, ServletException {
 
-    TokenAuthenticationService.addAuthentication(res, auth);
+    TokenAuthenticationService.addAuthentication(res, auth,keyStoreAccess);
   }
 }

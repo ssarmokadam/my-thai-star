@@ -1,19 +1,34 @@
 package com.devonfw.application.mtsj.general.service.impl.config;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+
 import javax.servlet.Filter;
 
 import org.apache.catalina.filters.SetCharacterEncodingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.filter.CharacterEncodingFilter;
 
 import com.devonfw.module.logging.common.api.DiagnosticContextFacade;
 import com.devonfw.module.logging.common.impl.DiagnosticContextFacadeImpl;
 import com.devonfw.module.logging.common.impl.DiagnosticContextFilter;
 import com.devonfw.module.logging.common.impl.PerformanceLogFilter;
+import com.devonfw.module.security.jwt.config.JwtTokenConfigProperties;
+import com.devonfw.module.security.jwt.config.KeyStoreAccessImpl;
+import com.devonfw.module.security.jwt.config.KeyStoreConfigProperties;
 import com.devonfw.module.service.common.api.constants.ServiceConstants;
 
 /**
@@ -85,4 +100,48 @@ public class WebConfig {
     registration.addUrlPatterns("/*");
     return registration;
   }
+
+	@Bean
+	public JwtTokenConfigProperties jwtTokenConfigProperties() {
+		return new JwtTokenConfigProperties();
+
+	}
+
+	@Bean
+	public KeyStoreConfigProperties keyStoreConfigProperties() {
+		return new KeyStoreConfigProperties();
+	}
+
+	@Bean
+	@DependsOn("keyStoreConfigProperties")
+	public KeyStore keyStore() {
+		KeyStore keyStore = null;
+		try {
+			keyStore = KeyStore.getInstance(keyStoreConfigProperties().getKeystoreType());
+
+			Resource keyStoreLocation = new FileSystemResource(
+					new File(keyStoreConfigProperties().getKeyStoreLocation()));
+			try (InputStream in = keyStoreLocation.getInputStream()) {
+
+				keyStore.load(in, keyStoreConfigProperties().getPassword().toCharArray()); // "changeit".toCharArray()
+
+				System.out.println("Keystore aliases " + keyStore.aliases().nextElement().toString());
+			} catch (IOException | NoSuchAlgorithmException | CertificateException e) {
+
+				e.printStackTrace();
+			}
+		} catch (KeyStoreException e) {
+
+			e.printStackTrace();
+		}
+		return keyStore;
+
+	}
+
+	@Bean
+	@Qualifier("keyStoreAccess")
+	public KeyStoreAccessImpl keyStoreAccess() {
+		return new KeyStoreAccessImpl();
+
+	}
 }
